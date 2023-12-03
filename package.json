@@ -5,6 +5,7 @@
     "author": "ssnielsen <soeren.nielsen@me.com>",
     "license": "MIT",
     "dependencies": {
+        "@mobily/ts-belt": "3.13.1",
         "@types/jest": "29.5.10",
         "@types/node": "20.10.0",
         "jest": "29.7.0",
