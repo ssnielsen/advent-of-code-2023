@@ -5,14 +5,12 @@ type Grid = string[][];
 
 type Point = [number, number];
 
-const numberRegex = /\d+/g;
-
 const scanNumbers = (grid: Grid): [number, Point[]][] => {
     const numbers: [number, Point[]][] = [];
     for (let y = 0; y < grid.length; y++) {
         const row = grid[y];
 
-        const result = row.join('').matchAll(numberRegex);
+        const result = row.join('').matchAll(/\d+/g);
 
         if (result) {
             [...result].forEach(result => {
