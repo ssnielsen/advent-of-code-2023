@@ -1,4 +1,4 @@
-import {A, pipe} from '@mobily/ts-belt';
+import {A, N, pipe} from '@mobily/ts-belt';
 import {loadRawInput} from '../util';
 
 const ASH = '.';
@@ -14,25 +14,26 @@ const transpose = <T>(grid: T[][]) => {
     return result;
 };
 
-const isIdenticalRows = <T>(row1: T[], row2: T[]) => {
+const sum = A.reduce(0, N.add);
+
+const sumDistance = <T>(row1: T[], row2: T[]) => {
     return pipe(
         A.zip(row1, row2),
-        A.every(([a, b]) => a === b),
+        A.map(([a, b]) => (a === b ? 0 : 1)),
+        sum,
     );
 };
 
 const buildReflectionRange = (size: number, index: number) => {
-    const before = A.reverse(A.range(0, index));
-    const after = A.range(index + 1, size - 1);
-
-    const smallest = Math.min(before.length, after.length);
-
-    const result = A.zip(A.take(before, smallest), A.take(after, smallest));
+    const result = A.zip(
+        A.reverse(A.range(0, index)),
+        A.range(index + 1, size - 1),
+    );
 
     return result;
 };
 
-const hasReflection = (rows: Tile[][]) => {
+const hasReflection = (rows: Tile[][], matchDistance: number) => {
     return pipe(
         rows,
         A.mapWithIndex(index => {
@@ -42,20 +43,15 @@ const hasReflection = (rows: Tile[][]) => {
 
             const reflectionMap = buildReflectionRange(rows.length, index);
 
-            const hasReflection = reflectionMap.every(([index1, index2]) => {
-                const isIdentical = isIdenticalRows(rows[index1], rows[index2]);
+            const totalDistance = pipe(
+                reflectionMap,
+                A.map(([index1, index2]) => {
+                    return sumDistance(rows[index1], rows[index2]);
+                }),
+                sum,
+            );
 
-                if (isIdentical) {
-                    console.log(reflectionMap);
-                    console.log('identical', index1, index2);
-                    console.log(rows[index1].join(''));
-                    console.log(rows[index2].join(''));
-                }
-
-                return isIdentical;
-            });
-
-            return hasReflection ? index : null;
+            return totalDistance === matchDistance ? index : null;
         }),
         A.filter(hasValue),
         A.head,
@@ -66,14 +62,11 @@ const hasValue = <T>(candidate: T | undefined | null): candidate is T => {
     return candidate !== undefined && candidate !== null;
 };
 
-const indexOfReflection = (grid: Grid) => {
+const indexOfReflection = (grid: Grid, matchDistance: number) => {
     const transposed = transpose(grid);
 
-    printGrid(grid);
-    printGrid(transposed);
-
-    const horizontalReflection = hasReflection(grid);
-    const verticalReflection = hasReflection(transposed);
+    const horizontalReflection = hasReflection(grid, matchDistance);
+    const verticalReflection = hasReflection(transposed, matchDistance);
 
     if (hasValue(horizontalReflection)) {
         return {type: 'horizontal', index: horizontalReflection};
@@ -91,10 +84,10 @@ const printGrid = (grid: Grid) => {
     console.log();
 };
 
-const part1 = (grids: Grid[]) => {
+const calculate = (grids: Grid[], matchDistance: number) => {
     const result = grids
         .map(grid => {
-            const index = indexOfReflection(grid);
+            const index = indexOfReflection(grid, matchDistance);
 
             switch (index?.type) {
                 case 'horizontal':
@@ -108,6 +101,14 @@ const part1 = (grids: Grid[]) => {
         .reduce((acc, curr) => acc + curr, 0);
 
     return result;
+};
+
+const part1 = (grids: Grid[]) => {
+    return calculate(grids, 0);
+};
+
+const part2 = (grids: Grid[]) => {
+    return calculate(grids, 1);
 };
 
 const parse = (input: string) => {
@@ -125,7 +126,8 @@ const parse = (input: string) => {
 export const run = () => {
     const input = loadRawInput('2023-13');
     const data = parse(input);
-    console.log(part1(A.take(data, data.length) as Grid[]));
+    console.log(part1(data));
+    console.log(part2(data));
 };
 
 const testInput1 = `
@@ -144,4 +146,46 @@ const testInput1 = `
 #####.##.
 ..##..###
 #....#..#
+`.trim();
+
+const testInput2 = `
+#.##..##.
+..#.##.#.
+##......#
+##......#
+..#.##.#.
+..##..##.
+#.#.##.#.
+
+#...##..#
+#....#..#
+..##..###
+#####.##.
+#####.##.
+..##..###
+#....#..#
+
+.#.##.#.#
+.##..##..
+.#.##.#..
+#......##
+#......##
+.#.##.#..
+.##..##.#
+
+#..#....#
+###..##..
+.##.#####
+.##.#####
+###..##..
+#..#....#
+#..##...#
+
+#.##..##.
+..#.##.#.
+##..#...#
+##...#..#
+..#.##.#.
+..##..##.
+#.#.##.#.
 `.trim();
